@@ -1,6 +1,6 @@
 [package]
 name = "bcmd"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["ZxStim <zxstim@blockcmd.com>"]
 edition = "2021"
 license = "MIT"
