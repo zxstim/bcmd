@@ -1,37 +1,25 @@
-use anyhow::{Context, Result};
 use clap::Parser;
+use reqwest;
+use tokio;
+use std::collections::HashMap;
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(Parser)]
 struct Cli {
-    /// The pattern to look for
-    pattern: String,
-    /// The path to the file to read
-    path: std::path::PathBuf,
+    /// The command to look for
+    pair: String
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
-    let content = std::fs::read_to_string(&args.path)
-        .with_context(|| format!("could not read file `{}`", args.path.display()))?;
-
-    find_matches(&content, &args.pattern, &mut std::io::stdout());
+    let pair = args.pair;
+    let url = format!("https://api.coingecko.com/api/v3/simple/price?ids={}&vs_currencies=usd", pair);
+    let res = reqwest::get(&url)
+        .await?
+        .json::<HashMap<String, HashMap<String, f64>>>()
+        .await?;
+    println!("{} price is: {}", pair, res.get(&pair).unwrap().get("usd").unwrap());
 
     Ok(())
 }
-
-fn find_matches(content: &str, pattern: &str, mut writer: impl std::io::Write) {
-    for line in content.lines() {
-        if line.contains(pattern) {
-            writeln!(writer, "{}", line).expect("Failed to write to buffer");
-        }
-    }
-}
-
-#[test]
-fn find_a_match() {
-    let mut result = Vec::new();
-    find_matches("lorem ipsum\ndolor sit amet", "lorem", &mut result);
-    assert_eq!(result, b"lorem ipsum\n");
-}
-
